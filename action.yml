@@ -1,14 +1,11 @@
 name: Java Release with version
 description: Runs java release after setting the project version. Also allow for extra command to be executed before the release.
 branding:
-  icon: check-square
-  color: blue
+  icon: upload
+  color: red
 
 inputs:
   ### Required
-  commands:
-    description: Commands to run before version is set, start with '|' for multi-line
-    required: true
   dir:
     description: App/package directory
     required: true
@@ -35,6 +32,9 @@ inputs:
   extra-params:
     description: Extra parameters to pass version set command, usually to ignore tests
     default: ""
+  commands:
+    description: Commands to run before version is set, start with '|' for multi-line
+    default: echo "No commands to run"
   
   ### Usually a bad idea / not recommended
   repository:
