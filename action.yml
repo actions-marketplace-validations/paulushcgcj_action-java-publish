@@ -68,7 +68,7 @@ runs:
         # Sets application version
         mvn versions:set ${{ input.extra-params }} -DnewVersion='${{ inputs.app-version }}' 
         mvn versions:commit ${{ input.extra-params }}
-        mvn -B $( [ "${{ inputs.add-sources }}" = "true" ] && echo source:jar ) $( [ "${{ inputs.add-javadoc }}" = "true" ] && echo javadoc:jar ) deploy ${{ input.extra-params }} 
+        mvn -B $( [ "${{ inputs.add-sources }}" = "true" ] && echo source:jar ) $( [ "${{ inputs.add-javadoc }}" = "true" ] && echo javadoc:jar ) deploy ${{ inputs.extra-params }} 
 
     # Set version and release for gradle
     - shell: bash
@@ -80,29 +80,27 @@ runs:
         ${{ inputs.commands }}
 
         # Sets application version
-        versionSetCommand=$(cat << 'EOF'
-                  \n\n
-                  task sourcesJar(type: Jar) {\n
-                      \tfrom sourceSets.main.allSource\n
-                      \tarchiveClassifier.set("sources")\n
-                  }\n\n
+        cat >> build.gradle << EOF
+        task sourcesJar(type: Jar) {
+            from sourceSets.main.allSource
+            archiveClassifier.set("sources")
+        }
 
-                  task javadocJar(type: Jar, dependsOn: "javadoc") {\n
-                      \tfrom javadoc.destinationDir\n
-                      \tarchiveClassifier.set("javadoc")\n
-                  }\n\n
+        task javadocJar(type: Jar, dependsOn: "javadoc") {
+            from javadoc.destinationDir
+            archiveClassifier.set("javadoc")
+        }
 
-                  task setVersion {\n
-                      \tdoLast {\n
-                          \t\tif (project.hasProperty("newVersion")) {\n
-                              \t\t\tproject.version = newVersion\n
-                          \t\t}\n
-                      \t}\n
-                  }\n\n
-                  )
-        echo "${{ versionSetCommand }}" >> build.gradle
+        task setVersion {
+            doLast {
+                if (project.hasProperty("newVersion")) {
+                    project.version = newVersion
+                }
+            }
+        }
+        EOF
         
-        gradle $( [ "${{ inputs.add-sources }}" = "true" ] && echo sourcesJar ) $( [ "${{ inputs.add-javadoc }}" = "true" ] && echo javadocJar ) setVersion ${{ input.extra-params }} -PnewVersion="${{ inputs.app-version }}"
+        gradle $( [ "${{ inputs.add-sources }}" = "true" ] && echo sourcesJar ) $( [ "${{ inputs.add-javadoc }}" = "true" ] && echo javadocJar ) setVersion ${{ inputs.extra-params }} -PnewVersion="${{ inputs.app-version }}"
 
     # Fix - Clone for action.yml and other verifications
     - name: Checkout Action repo to pass tests
