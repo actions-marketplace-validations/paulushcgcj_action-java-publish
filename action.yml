@@ -100,7 +100,7 @@ runs:
         }
         EOF
         
-        gradle $( [ "${{ inputs.add-sources }}" = "true" ] && echo sourcesJar ) $( [ "${{ inputs.add-javadoc }}" = "true" ] && echo javadocJar ) setVersion ${{ inputs.extra-params }} -PnewVersion="${{ inputs.app-version }}"
+        gradle $( [ "${{ inputs.add-sources }}" = "true" ] && echo sourcesJar ) $( [ "${{ inputs.add-javadoc }}" = "true" ] && echo javadocJar ) setVersion ${{ inputs.extra-params }} publish -PnewVersion="${{ inputs.app-version }}"
 
     # Fix - Clone for action.yml and other verifications
     - name: Checkout Action repo to pass tests
