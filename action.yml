@@ -1,0 +1,109 @@
+name: Java Release with version
+description: Runs java release after setting the project version. Also allow for extra command to be executed before the release.
+branding:
+  icon: check-square
+  color: blue
+
+inputs:
+  ### Required
+  commands:
+    description: Commands to run before version is set, start with '|' for multi-line
+    required: true
+  dir:
+    description: App/package directory
+    required: true
+  app-version:
+    description: Application version
+    required: true
+
+  ### Typical / recommended
+  java-cache:
+    description: Java package manager cache, defaults to maven
+    default: maven
+  java-distribution:
+    description: Java distribution, defaults to temurin
+    default: temurin
+  java-version:
+    description: Java version, defaults to 17 (LTS)
+    default: "17"
+  add-sources:
+    description: Add sources to the release
+    default: false
+  add-javadoc:
+    description: Add javadoc to the release
+    default: false
+  extra-params:
+    description: Extra parameters to pass version set command, usually to ignore tests
+    default: ""
+  
+  ### Usually a bad idea / not recommended
+  repository:
+    description: Non-default repository to clone
+    default: ${{ github.repository }}
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/checkout@v3
+      with:
+        repository: ${{ inputs.repository }}
+
+    # Setup maven with java and cache dir
+    - uses: actions/setup-java@v3
+      with:
+        cache: ${{ inputs.java-cache }}
+        distribution: ${{ inputs.java-distribution }}
+        java-version: ${{ inputs.java-version }}
+        server-id: 'github'
+
+    # Set version and release for maven
+    - shell: bash
+      if: ${{ inputs.java-cache }} == "maven"
+      run: |
+        cd ${{ inputs.dir }}
+
+        # Run pre-release commands
+        ${{ inputs.commands }}
+
+        # Sets application version
+        mvn versions:set ${{ input.extra-params }} -DnewVersion='${{ inputs.app-version }}' 
+        mvn versions:commit ${{ input.extra-params }}
+        mvn -B $( [ "${{ inputs.add-sources }}" = "true" ] && echo source:jar ) $( [ "${{ inputs.add-javadoc }}" = "true" ] && echo javadoc:jar ) deploy ${{ input.extra-params }} 
+
+    # Set version and release for gradle
+    - shell: bash
+      if: ${{ inputs.java-cache }} == "gradle"
+      run: |
+        cd ${{ inputs.dir }}
+
+        # Run pre-release commands
+        ${{ inputs.commands }}
+
+        # Sets application version
+        versionSetCommand=$(cat << 'EOF'
+                  \n\n
+                  task sourcesJar(type: Jar) {\n
+                      \tfrom sourceSets.main.allSource\n
+                      \tarchiveClassifier.set("sources")\n
+                  }\n\n
+
+                  task javadocJar(type: Jar, dependsOn: "javadoc") {\n
+                      \tfrom javadoc.destinationDir\n
+                      \tarchiveClassifier.set("javadoc")\n
+                  }\n\n
+
+                  task setVersion {\n
+                      \tdoLast {\n
+                          \t\tif (project.hasProperty("newVersion")) {\n
+                              \t\t\tproject.version = newVersion\n
+                          \t\t}\n
+                      \t}\n
+                  }\n\n
+                  )
+        echo "${{ versionSetCommand }}" >> build.gradle
+        
+        gradle $( [ "${{ inputs.add-sources }}" = "true" ] && echo sourcesJar ) $( [ "${{ inputs.add-javadoc }}" = "true" ] && echo javadocJar ) setVersion ${{ input.extra-params }} -PnewVersion="${{ inputs.app-version }}"
+
+    # Fix - Clone for action.yml and other verifications
+    - name: Checkout Action repo to pass tests
+      uses: actions/checkout@v3
