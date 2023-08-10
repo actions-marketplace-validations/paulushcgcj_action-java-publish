@@ -58,7 +58,7 @@ runs:
 
     # Set version and release for maven
     - shell: bash
-      if: ${{ inputs.java-cache == "maven"}}
+      if: ${{ inputs.java-cache == 'maven'}}
       run: |
         cd ${{ inputs.dir }}
 
@@ -72,7 +72,7 @@ runs:
 
     # Set version and release for gradle
     - shell: bash
-      if: ${{ inputs.java-cache == "gradle"}}
+      if: ${{ inputs.java-cache == 'gradle'}}
       run: |
         cd ${{ inputs.dir }}
 
