@@ -66,8 +66,8 @@ runs:
         ${{ inputs.commands }}
 
         # Sets application version
-        mvn versions:set ${{ input.extra-params }} -DnewVersion='${{ inputs.app-version }}' 
-        mvn versions:commit ${{ input.extra-params }}
+        mvn versions:set ${{ inputs.extra-params }} -DnewVersion='${{ inputs.app-version }}' 
+        mvn versions:commit ${{ inputs.extra-params }}
         mvn -B $( [ "${{ inputs.add-sources }}" = "true" ] && echo source:jar ) $( [ "${{ inputs.add-javadoc }}" = "true" ] && echo javadoc:jar ) deploy ${{ inputs.extra-params }} 
 
     # Set version and release for gradle
